@@ -10,5 +10,7 @@ defmodule SubscriptionBackend.Repo.Migrations.CreateSubscribers do
       timestamps()
     end
 
+    create unique_index(:subscribers, [:email])
+
   end
 end
