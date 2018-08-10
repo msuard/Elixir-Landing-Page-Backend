@@ -12,18 +12,18 @@ defmodule SubscriptionBackendWeb.SubscriberController do
     case Newsletter.create_subscriber(params) do
       {:ok, %Subscriber{}} ->
         conn
-        |> put_status(200)
+        |> put_status(:created)
         |> json(%{ status: "Success", params: params})
 
       {:error, changeset} ->
         error = Utils.handle_changeset_errors(changeset.errors)
         conn
-        |> put_status(400)
+        |> put_status(:bad_request)
         |> json(%{ error: error, params: params})
 
       _ ->
         conn
-        |> put_status(400)
+        |> put_status(:internal_server_error)
         |> json(%{ status: "Error: something went wrong...", params: params})
     end
 

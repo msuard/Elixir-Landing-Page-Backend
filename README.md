@@ -2,7 +2,7 @@
 
 Backend service for the Novamining ICO landing page.
 
-To start your Phoenix server on http://localhost:4000:
+To start your Phoenix server on http://localhost:4000 :
 
   * Install dependencies with `mix deps.get`
   * Create and migrate your database with `mix ecto.create && mix ecto.migrate`

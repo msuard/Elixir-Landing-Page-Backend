@@ -19,5 +19,4 @@ defmodule SubscriptionBackend.Utils do
     message
   end
 
-
 end

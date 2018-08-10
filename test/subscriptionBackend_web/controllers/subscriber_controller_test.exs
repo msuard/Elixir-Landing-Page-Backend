@@ -4,80 +4,119 @@ defmodule SubscriptionBackendWeb.SubscriberControllerTest do
   alias SubscriptionBackend.Newsletter
   alias SubscriptionBackend.Newsletter.Subscriber
 
-  @create_attrs %{email: "some email", first_name: "some first_name", last_name: "some last_name"}
-  @update_attrs %{email: "some updated email", first_name: "some updated first_name", last_name: "some updated last_name"}
-  @invalid_attrs %{email: nil, first_name: nil, last_name: nil}
+  @create_attrs %{email: "some.email@valid.domain.xyz", first_name: "some first_name", last_name: "some last_name"}
+  @missing_attrs %{email: nil, first_name: nil, last_name: nil}
+  @invalid_email %{email: "invalid email", first_name: "some first_name", last_name: "some last_name"}
+  @invalid_first_name %{email: "some.email@valid.domain.xyz", first_name: 123456, last_name: "some last_name"}
+  @invalid_last_name %{email: "some.email@valid.domain.xyz", first_name: "some first_name", last_name: 123456}
+  @invalid_domain %{email: "some.email@duck2.xyz", first_name: "some first_name", last_name: "some last_name"}
+
 
   def fixture(:subscriber) do
     {:ok, subscriber} = Newsletter.create_subscriber(@create_attrs)
     subscriber
   end
 
-  setup %{conn: conn} do
-    {:ok, conn: put_req_header(conn, "accept", "application/json")}
-  end
-
-  describe "index" do
-    test "lists all subscribers", %{conn: conn} do
-      conn = get conn, subscriber_path(conn, :index)
-      assert json_response(conn, 200)["data"] == []
-    end
-  end
-
   describe "create subscriber" do
-    test "renders subscriber when data is valid", %{conn: conn} do
-      conn = post conn, subscriber_path(conn, :create), subscriber: @create_attrs
-      assert %{"id" => id} = json_response(conn, 201)["data"]
+    test "creates subscriber when data is valid", %{conn: conn} do
 
-      conn = get conn, subscriber_path(conn, :show, id)
-      assert json_response(conn, 200)["data"] == %{
-        "id" => id,
-        "email" => "some email",
-        "first_name" => "some first_name",
-        "last_name" => "some last_name"}
+      conn = post conn, "/subscribe/new", @create_attrs
+
+      assert  %{
+                 "params" => %{
+                   "email" => "some.email@valid.domain.xyz",
+                   "first_name" => "some first_name",
+                   "last_name" => "some last_name"
+                 },
+                 "status" => "Success"
+               }
+                = json_response(conn, 201)
     end
 
-    test "renders errors when data is invalid", %{conn: conn} do
-      conn = post conn, subscriber_path(conn, :create), subscriber: @invalid_attrs
-      assert json_response(conn, 422)["errors"] != %{}
-    end
-  end
+    test "returns proper error message when attributes are missing", %{conn: conn} do
 
-  describe "update subscriber" do
-    setup [:create_subscriber]
+      conn = post conn, "/subscribe/new", @missing_attrs
 
-    test "renders subscriber when data is valid", %{conn: conn, subscriber: %Subscriber{id: id} = subscriber} do
-      conn = put conn, subscriber_path(conn, :update, subscriber), subscriber: @update_attrs
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
-
-      conn = get conn, subscriber_path(conn, :show, id)
-      assert json_response(conn, 200)["data"] == %{
-        "id" => id,
-        "email" => "some updated email",
-        "first_name" => "some updated first_name",
-        "last_name" => "some updated last_name"}
+      assert %{
+               "error" => [
+                 %{"first_name" => "Missing field"},
+                 %{"last_name" => "Missing field"},
+                 %{"email" => "Missing field"}
+               ],
+               "params" => %{
+                 "email" => nil,
+                 "first_name" => nil,
+                 "last_name" => nil
+               }
+             }
+             = json_response(conn, 400)
     end
 
-    test "renders errors when data is invalid", %{conn: conn, subscriber: subscriber} do
-      conn = put conn, subscriber_path(conn, :update, subscriber), subscriber: @invalid_attrs
-      assert json_response(conn, 422)["errors"] != %{}
-    end
-  end
+    test "returns proper error message when email is invalid", %{conn: conn} do
 
-  describe "delete subscriber" do
-    setup [:create_subscriber]
+      conn = post conn, "/subscribe/new", @invalid_email
 
-    test "deletes chosen subscriber", %{conn: conn, subscriber: subscriber} do
-      conn = delete conn, subscriber_path(conn, :delete, subscriber)
-      assert response(conn, 204)
-      assert_error_sent 404, fn ->
-        get conn, subscriber_path(conn, :show, subscriber)
-      end
+      assert %{
+               "error" => [%{"email" => "Invalid email format"}],
+               "params" => %{
+                 "email" => "invalid email",
+                 "first_name" => "some first_name",
+                 "last_name" => "some last_name"
+               }
+             }
+             = json_response(conn, 400)
     end
+
+    test "returns proper error message when first_name is invalid", %{conn: conn} do
+
+      conn = post conn, "/subscribe/new", @invalid_first_name
+
+      assert %{
+               "error" => [%{"first_name" => "is invalid"}],
+               "params" => %{
+                 "email" => "some.email@valid.domain.xyz",
+                 "first_name" => 123456,
+                 "last_name" => "some last_name"
+               }
+             }
+             = json_response(conn, 400)
+    end
+
+    test "returns proper error message when last_name is invalid", %{conn: conn} do
+
+      conn = post conn, "/subscribe/new", @invalid_last_name
+
+      assert %{
+               "error" => [%{"last_name" => "is invalid"}],
+               "params" => %{
+                 "email" => "some.email@valid.domain.xyz",
+                 "first_name" => "some first_name",
+                 "last_name" => 123456
+               }
+             }
+             = json_response(conn, 400)
+    end
+
+    test "returns proper error message when domain is invalid", %{conn: conn} do
+
+      conn = post conn, "/subscribe/new", @invalid_domain
+
+      assert %{
+               "error" => [%{"email" => "Invalid email domain"}],
+               "params" => %{
+                 "email" => "some.email@duck2.xyz",
+                 "first_name" => "some first_name",
+                 "last_name" => "some last_name"
+               }
+             }
+             = json_response(conn, 400)
+    end
+
   end
 
   defp create_subscriber(_) do
     subscriber = fixture(:subscriber)
     {:ok, subscriber: subscriber}
   end
+
 end

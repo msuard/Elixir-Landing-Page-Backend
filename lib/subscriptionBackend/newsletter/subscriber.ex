@@ -3,7 +3,6 @@ defmodule SubscriptionBackend.Newsletter.Subscriber do
   import Ecto.Changeset
   alias SubscriptionBackend.DomainsBlackList
 
-
   schema "subscribers" do
     field :email, :string, null: false, unique: true
     field :first_name, :string, null: false
@@ -19,10 +18,11 @@ defmodule SubscriptionBackend.Newsletter.Subscriber do
     |> validate_required([:first_name, :last_name, :email], message: "Missing field") # Ensure all parameters are passed
     |> validate_is_string(:email, message: "email should be a string")
     |> validate_format(:email, ~r/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/, message: "Invalid email format") # Ensure email is valid email
+    |> validate_domain(:email, message: "Invalid email domain")
     |> unique_constraint(:email, message: "Email already registered in database") # Ensure there are no email duplicates in database
     |> validate_is_string(:first_name, message: "first_name should be a string")
     |> validate_is_string(:last_name, message: "last_name should be a string")
-    |> validate_domain(:email, message: "Invalid email domain")
+
 
   end
 
