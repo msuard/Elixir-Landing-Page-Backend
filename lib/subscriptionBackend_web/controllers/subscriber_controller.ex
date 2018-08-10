@@ -1,38 +1,32 @@
 defmodule SubscriptionBackendWeb.SubscriberController do
   use SubscriptionBackendWeb, :controller
 
-  plug SubscriptionBackendWeb.Plugs.ValidateEmail
-  plug SubscriptionBackendWeb.Plugs.ValidateDomain
-  plug SubscriptionBackendWeb.Plugs.CheckDuplicateEmail
-  plug SubscriptionBackendWeb.Plugs.CheckName
-  plug SubscriptionBackendWeb.Plugs.ValidateRequest
-
   alias SubscriptionBackend.Newsletter.Subscriber
   alias SubscriptionBackend.Newsletter
+  alias SubscriptionBackend.Utils
 
   def create(conn, %{"first_name" => first_name, "last_name" => last_name, "email" => email}) do
 
     params = %{first_name: first_name, last_name: last_name, email: email}
 
-    valid_request? = conn.assigns.valid_request?
-    status = conn.assigns.status
+    case Newsletter.create_subscriber(params) do
+      {:ok, %Subscriber{}} ->
+        conn
+        |> put_status(200)
+        |> json(%{ status: "Success", params: params})
 
-    case valid_request?  do
-      true ->
-        with {:ok, %Subscriber{}} <- Newsletter.create_subscriber(params) do
-          conn
-          |> put_status(200)
-          |> json(%{ status: status, params: params})
-        end
-
-      false ->
+      {:error, changeset} ->
+        error = Utils.handle_changeset_errors(changeset.errors)
         conn
         |> put_status(400)
-        |> json(%{ status: status, params: params})
+        |> json(%{ error: error, params: params})
 
+      _ ->
+        conn
+        |> put_status(400)
+        |> json(%{ status: "Error: something went wrong...", params: params})
     end
 
   end
 
 end
-
