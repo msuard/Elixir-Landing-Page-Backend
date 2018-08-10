@@ -1,42 +1,38 @@
 defmodule SubscriptionBackendWeb.SubscriberController do
   use SubscriptionBackendWeb, :controller
 
-  alias SubscriptionBackend.Newsletter
+  plug SubscriptionBackendWeb.Plugs.ValidateEmail
+  plug SubscriptionBackendWeb.Plugs.ValidateDomain
+  plug SubscriptionBackendWeb.Plugs.CheckDuplicateEmail
+  plug SubscriptionBackendWeb.Plugs.CheckName
+  plug SubscriptionBackendWeb.Plugs.ValidateRequest
+
   alias SubscriptionBackend.Newsletter.Subscriber
+  alias SubscriptionBackend.Newsletter
 
-  action_fallback SubscriptionBackendWeb.FallbackController
+  def create(conn, %{"first_name" => first_name, "last_name" => last_name, "email" => email}) do
 
-  def index(conn, _params) do
-    subscribers = Newsletter.list_subscribers()
-    render(conn, "index.json", subscribers: subscribers)
-  end
+    params = %{first_name: first_name, last_name: last_name, email: email}
 
-  def create(conn, %{"subscriber" => subscriber_params}) do
-    with {:ok, %Subscriber{} = subscriber} <- Newsletter.create_subscriber(subscriber_params) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", subscriber_path(conn, :show, subscriber))
-      |> render("show.json", subscriber: subscriber)
+    valid_request? = conn.assigns.valid_request?
+    status = conn.assigns.status
+
+    case valid_request?  do
+      true ->
+        with {:ok, %Subscriber{}} <- Newsletter.create_subscriber(params) do
+          conn
+          |> put_status(200)
+          |> json(%{ status: status, params: params})
+        end
+
+      false ->
+        conn
+        |> put_status(400)
+        |> json(%{ status: status, params: params})
+
     end
+
   end
 
-  def show(conn, %{"id" => id}) do
-    subscriber = Newsletter.get_subscriber!(id)
-    render(conn, "show.json", subscriber: subscriber)
-  end
-
-  def update(conn, %{"id" => id, "subscriber" => subscriber_params}) do
-    subscriber = Newsletter.get_subscriber!(id)
-
-    with {:ok, %Subscriber{} = subscriber} <- Newsletter.update_subscriber(subscriber, subscriber_params) do
-      render(conn, "show.json", subscriber: subscriber)
-    end
-  end
-
-  def delete(conn, %{"id" => id}) do
-    subscriber = Newsletter.get_subscriber!(id)
-    with {:ok, %Subscriber{}} <- Newsletter.delete_subscriber(subscriber) do
-      send_resp(conn, :no_content, "")
-    end
-  end
 end
+
