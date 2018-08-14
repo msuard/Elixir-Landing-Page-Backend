@@ -19,7 +19,7 @@ defmodule SubscriptionBackendWeb.SubscriberController do
         error = Utils.handle_changeset_errors(changeset.errors)
         conn
         |> put_status(:bad_request)
-        |> json(%{ error: error, params: params})
+        |> json(%{ status: error, params: params})
 
       _ ->
         conn
