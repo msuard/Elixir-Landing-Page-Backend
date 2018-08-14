@@ -1,6 +1,6 @@
 # SubscriptionBackend
 
-Backend service for the Novamining ICO landing page.
+Backend service for landing page newsletter subscription.
 
 To start your Phoenix server on http://localhost:4000 :
 
